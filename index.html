@@ -163,6 +163,8 @@
       calendar.setOption('slotMinTime', slotMinTime);
       calendar.setOption('slotMaxTime', slotMaxTime);
       calendar.setOption('timeZone', timeZone);
+      calendar.destroy();
+      calendar.render();
       localStorage.setItem('timezone', targetTimezone);
     }
 
@@ -225,7 +227,14 @@
           },
         ],
         timeZone,
-        locale: 'en-GB',
+        now: () => {
+          if (!calendar) return;
+          const timeZone = calendar.getOption('timeZone');
+          if (timeZone === 'local') {
+            return new Date();
+          }
+          return new Date((new Date()).getTime() - getTimezoneOffset(timeZone) * 60 * 1000);
+        },
         eventDataTransform: function(eventData) {
           // console.log(eventData);
           delete eventData.url;
