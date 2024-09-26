@@ -2,6 +2,8 @@
 <html>
 <head>
   <title>Grubby's Twitch schedule</title>
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/google-calendar@6.1.15/index.global.min.js'></script>
   <style>
     body {
       font-family: Arial, Helvetica Neue, Helvetica, sans-serif;
@@ -88,12 +90,12 @@
   
   <div id="calendar"></div>
 
-  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
-  <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/google-calendar@6.1.15/index.global.min.js'></script>
   <script>
     const grubbyTimezone = 'Europe/Amsterdam';
+    
     var calendar = null;
 
+    // Get the timezone offset in minutes
     function getTimezoneOffset(tz) {
       if (tz == 'local') {
         return new Date().getTimezoneOffset();
@@ -105,7 +107,7 @@
       return (t2 - t1) / 60 / 1000;
     }
 
-    // Function to convert a time string (like '16:00:00') to a new time adjusted by the offset
+    // Convert a time string (like '16:00:00') to a new time adjusted by the offset
     function adjustTimeForOffset(timeStr, offsetInMinutes) {
       var timeParts = timeStr.split(':');
       var hours = parseInt(timeParts[0]);
@@ -122,16 +124,17 @@
       return ('0' + adjustedHours).slice(-2) + ':' + ('0' + adjustedMinutes).slice(-2) + ':00';
     }
 
+    // Get the options for the calendar based on the target timezone
     function getOptions(targetTimezone) {
       document.getElementById('local-time').disabled = targetTimezone === 'local';
       document.getElementById('grubby-time').disabled = targetTimezone === 'grubby';
       if (targetTimezone === 'grubby') targetTimezone = grubbyTimezone;
 
-      // Target timezone offset (+2:00 in this case)
-      var targetTimezoneOffset = -2 * 60; // in minutes, to get to UTC
+      // Target (Grubby's) timezone offset in minutes
+      var targetTimezoneOffset = getTimezoneOffset(grubbyTimezone);
 
       // Get the user's local timezone offset in minutes (positive for west of UTC, negative for east)
-      var localTimezoneOffset = getTimezoneOffset(targetTimezone); // in minutes
+      var localTimezoneOffset = getTimezoneOffset(targetTimezone);
 
       // Calculate the difference between the target timezone and local timezone
       var offsetDifference = targetTimezoneOffset - localTimezoneOffset;
@@ -151,6 +154,7 @@
       };
     }
 
+    // Change the timezone of the calendar, and update the slot times
     function changeTimezone(targetTimezone) {
       var { timeZone, slotMinTime, slotMaxTime } = getOptions(targetTimezone);
       calendar.setOption('slotMinTime', slotMinTime);
@@ -159,6 +163,7 @@
       localStorage.setItem('timezone', targetTimezone);
     }
 
+    // Get the event time format based on the selected time format
     function getTimeFormat(timeFormat) {
       document.getElementById('default-time').disabled = !timeFormat;
       document.getElementById('12h-time').disabled = timeFormat === '12h';
@@ -174,14 +179,17 @@
       }
     }
 
+    // Change the event time format
     function changeTimeFormat(timeFormat) {
       var eventTimeFormat = getTimeFormat(timeFormat);
       calendar.setOption('eventTimeFormat', eventTimeFormat);
       localStorage.setItem('timeFormat', timeFormat);
     }
 
-    function initCalendar(timeZone) {
+    // Initialize and render the calendar
+    function initCalendar(timeZone, timeFormat) {
       var { timeZone, slotMinTime, slotMaxTime } = getOptions(timeZone);
+      var eventTimeFormat = getTimeFormat(timeFormat);
 
       var calendarEl = document.getElementById('calendar');
       calendar = new FullCalendar.Calendar(calendarEl, {
@@ -208,15 +216,16 @@
         nowIndicator: true,
         slotMinTime,
         slotMaxTime,
+        eventTimeFormat,
       });
       calendar.render();
     }
 
+    // On page load, initialize the calendar with the saved timezone and time format
     document.addEventListener('DOMContentLoaded', function() {
       const timezone = localStorage.getItem('timezone') ?? 'local';
       const timeFormat = localStorage.getItem('timeFormat') ?? '';
-      initCalendar(timezone);
-      changeTimeFormat(timeFormat);
+      initCalendar(timezone, timeFormat);
     });
   </script>
 </body>
