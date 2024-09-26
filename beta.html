@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Grubby's Twitch schedule</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica Neue, Helvetica, sans-serif;
+      font-size: 18px;
+    }
+    .btn {
+      font-size: 18px;
+      background-color: var(--fc-button-bg-color);
+      border-color: var(--fc-button-border-color);
+      color: var(--fc-button-text-color);
+      border: 1px solid transparent;
+      border-radius: 0.25em;
+      display: inline-block;
+      font-size: 1em;
+      font-weight: 400;
+      line-height: 1.5;
+      padding: 0.4em 0.65em;
+      text-align: center;
+      user-select: none;
+      vertical-align: middle;
+      cursor: pointer;
+    }
+    .btn:disabled {
+      opacity: 0.65;
+      pointer-events: none;
+    }
+    .btn:hover {
+      background-color: var(--fc-button-hover-bg-color);
+      border-color: var(--fc-button-hover-border-color);
+      color: var(--fc-button-text-color);
+    }
+    .btn:focus {
+      box-shadow: rgba(76, 91, 106, 0.5) 0px 0px 0px 0.2rem;
+    }
+    .btn-group {
+      display: inline-flex;
+      white-space: collapse;
+      gap: 1px;
+    }
+    .btn-group > .btn:not(:last-child) {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    .btn-group > .btn:not(:first-child) {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+
+    .fc-button-group {
+      gap: 2px;
+    }
+    .fc-event-main-frame {
+      border-color: rgb(24, 44, 87);
+      background-color: rgb(83, 108, 166);
+    }
+    .fc-event-time {
+      font-weight: bold;
+      background-color: rgb(24, 44, 87);
+      padding: 3px;
+    }
+    .fc-event-title {
+      padding: 2px;
+    }
+    .fc-timegrid-event .fc-event-main {
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+  <h2>Grubby's Twitch Schedule</h2>
+  <p>
+    <span style="margin-left: 16px;">Show in:</span>
+    <span class="btn-group">
+      <button id="local-time" disabled onclick="changeTimezone('local')" class="btn" type="button">Your Time</button>
+      <button id="grubby-time" onclick="changeTimezone('grubby')" class="btn">Grubby's Time</button>
+    </span>
+    <span style="margin-left: 32px;">Format:</span>
+    <span class="btn-group">
+      <button id="12h-time" onclick="changeTimeFormat('12h')" class="btn">12h</button>
+      <button id="24h-time" onclick="changeTimeFormat('24h')" class="btn">24h</button>
+    </span>
+  </p>
+  
+  <div id="calendar"></div>
+
+  <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+  <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/google-calendar@6.1.15/index.global.min.js'></script>
+  <script>
+    var calendar = null;
+
+    function getTimezoneOffset(tz) {
+      if (tz == 'local') {
+        return new Date().getTimezoneOffset();
+      }
+      const a = new Date().toLocaleString("ja", {timeZone: tz}).split(/[/\s:]/);
+      a[1]--;
+      const t1 = Date.UTC.apply(null, a);
+      const t2 = new Date().setMilliseconds(0);
+      return (t2 - t1) / 60 / 1000;
+    }
+
+    // Function to convert a time string (like '16:00:00') to a new time adjusted by the offset
+    function adjustTimeForOffset(timeStr, offsetInMinutes) {
+      var timeParts = timeStr.split(':');
+      var hours = parseInt(timeParts[0]);
+      var minutes = parseInt(timeParts[1]);
+
+      // Convert time to minutes and adjust by the offset
+      var totalMinutes = hours * 60 + minutes + offsetInMinutes;
+
+      // Convert back to hours and minutes
+      var adjustedHours = Math.floor(totalMinutes / 60);
+      var adjustedMinutes = totalMinutes % 60;
+
+      // Format hours and minutes as strings
+      return ('0' + adjustedHours).slice(-2) + ':' + ('0' + adjustedMinutes).slice(-2) + ':00';
+    }
+
+    function getOptions(targetTimezone) {
+      // Target timezone offset (+2:00 in this case)
+      var targetTimezoneOffset = -2 * 60; // in minutes, to get to UTC
+
+      // Get the user's local timezone offset in minutes (positive for west of UTC, negative for east)
+      var localTimezoneOffset = getTimezoneOffset(targetTimezone); // in minutes
+
+      // Calculate the difference between the target timezone and local timezone
+      var offsetDifference = targetTimezoneOffset - localTimezoneOffset;
+
+      // Target times in +2 timezone
+      var targetSlotMinTime = '16:00:00';
+      var targetSlotMaxTime = '28:00:00';
+
+      // Convert target times to local times based on the offset difference
+      var localSlotMinTime = adjustTimeForOffset(targetSlotMinTime, offsetDifference);
+      var localSlotMaxTime = adjustTimeForOffset(targetSlotMaxTime, offsetDifference);
+
+      return {
+        timeZone: targetTimezone,
+        slotMinTime: localSlotMinTime,
+        slotMaxTime: localSlotMaxTime,
+      };
+    }
+
+    function initCalendar() {
+      var { timeZone, slotMinTime, slotMaxTime } = getOptions('local');
+
+      var calendarEl = document.getElementById('calendar');
+      calendar = new FullCalendar.Calendar(calendarEl, {
+        height: "auto",
+        initialView: 'timeGridWeek',
+        headerToolbar: {
+          left: 'prev,today,next',
+          center: 'title',
+          right: 'timeGridWeek,listWeek',
+        },
+        googleCalendarApiKey: 'AIzaSyAqhfql2Ed-Qjcb8LQv3th4xyeXc5VBFao',
+        eventSources: [
+          {
+            googleCalendarId: 'grubbytwitch@gmail.com',
+            color: 'rgb(83, 108, 166)',
+          },
+        ],
+        timeZone,
+        eventDataTransform: function(eventData) {
+          // console.log(eventData);
+          delete eventData.url;
+        },
+        allDaySlot: false,
+        nowIndicator: true,
+        slotMinTime,
+        slotMaxTime,
+      });
+      calendar.render();
+    }
+
+    function changeTimezone(targetTimezone) {
+      document.getElementById('local-time').disabled = targetTimezone === 'local';
+      document.getElementById('grubby-time').disabled = targetTimezone === 'grubby';
+      if (targetTimezone === 'grubby') {
+        targetTimezone = 'Europe/Amsterdam';
+      }
+      var { timeZone, slotMinTime, slotMaxTime } = getOptions(targetTimezone);
+      calendar.setOption('slotMinTime', slotMinTime);
+      calendar.setOption('slotMaxTime', slotMaxTime);
+      calendar.setOption('timeZone', timeZone);
+    }
+
+    function changeTimeFormat(format) {
+      document.getElementById('12h-time').disabled = format === '12h';
+      document.getElementById('24h-time').disabled = format === '24h';
+      calendar.setOption('eventTimeFormat', {
+        hour: 'numeric',
+        minute: '2-digit',
+        meridiem: false,
+        hour12: format === '12h',
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      initCalendar('local');
+    });
+  </script>
+</body>
+</html>
