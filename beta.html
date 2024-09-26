@@ -82,7 +82,7 @@
     </span>
     <span style="margin-left: 32px;">Format:</span>
     <span class="btn-group">
-      <button id="default-time" onclick="changeTimeFormat('')" class="btn">Default</button>
+      <!-- <button id="default-time" onclick="changeTimeFormat('')" class="btn">Default</button> -->
       <button id="12h-time" onclick="changeTimeFormat('12h')" class="btn">12h</button>
       <button id="24h-time" onclick="changeTimeFormat('24h')" class="btn">24h</button>
     </span>
@@ -165,31 +165,46 @@
 
     // Get the event time format based on the selected time format
     function getTimeFormat(timeFormat) {
-      document.getElementById('default-time').disabled = !timeFormat;
+      // document.getElementById('default-time').disabled = !timeFormat;
+      if (!timeFormat) timeFormat = '24h';
       document.getElementById('12h-time').disabled = timeFormat === '12h';
       document.getElementById('24h-time').disabled = timeFormat === '24h';
-      if (!timeFormat) {
-        return null;
-      }
+      // if (!timeFormat) {
+      //   return {
+      //     eventTimeFormat: null,
+      //     slotLabelFormat: null,
+      //   };
+      // }
       return {
-        hour: 'numeric',
-        minute: '2-digit',
-        meridiem: false,
-        hour12: timeFormat === '12h',
+        eventTimeFormat: {
+          hour: 'numeric',
+          minute: '2-digit',
+          meridiem: timeFormat === '12h' ? 'short' : false,
+          omitZeroMinute: timeFormat === '12h',
+          hour12: timeFormat === '12h',
+        },
+        slotLabelFormat: {
+          hour: 'numeric',
+          minute: '2-digit',
+          meridiem: timeFormat === '12h' ? 'short' : false,
+          omitZeroMinute: timeFormat === '12h',
+          hour12: timeFormat === '12h',
+        },
       }
     }
 
     // Change the event time format
     function changeTimeFormat(timeFormat) {
-      var eventTimeFormat = getTimeFormat(timeFormat);
+      var { eventTimeFormat, slotLabelFormat } = getTimeFormat(timeFormat);
       calendar.setOption('eventTimeFormat', eventTimeFormat);
+      calendar.setOption('slotLabelFormat', slotLabelFormat);
       localStorage.setItem('timeFormat', timeFormat);
     }
 
     // Initialize and render the calendar
     function initCalendar(timeZone, timeFormat) {
       var { timeZone, slotMinTime, slotMaxTime } = getOptions(timeZone);
-      var eventTimeFormat = getTimeFormat(timeFormat);
+      var { eventTimeFormat, slotLabelFormat } = getTimeFormat(timeFormat);
 
       var calendarEl = document.getElementById('calendar');
       calendar = new FullCalendar.Calendar(calendarEl, {
@@ -208,15 +223,19 @@
           },
         ],
         timeZone,
+        locale: 'en-GB',
         eventDataTransform: function(eventData) {
           // console.log(eventData);
           delete eventData.url;
         },
+        eventMinHeight: 30,
         allDayContent: '',
+        
         nowIndicator: true,
         slotMinTime,
         slotMaxTime,
         eventTimeFormat,
+        slotLabelFormat,
       });
       calendar.render();
     }
@@ -224,7 +243,7 @@
     // On page load, initialize the calendar with the saved timezone and time format
     document.addEventListener('DOMContentLoaded', function() {
       const timezone = localStorage.getItem('timezone') ?? 'local';
-      const timeFormat = localStorage.getItem('timeFormat') ?? '';
+      const timeFormat = localStorage.getItem('timeFormat') ?? '24h';
       initCalendar(timezone, timeFormat);
     });
   </script>
