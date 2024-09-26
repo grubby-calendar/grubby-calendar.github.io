@@ -75,11 +75,12 @@
   <p>
     <span style="margin-left: 16px;">Show in:</span>
     <span class="btn-group">
-      <button id="local-time" disabled onclick="changeTimezone('local')" class="btn" type="button">Your Time</button>
+      <button id="local-time" onclick="changeTimezone('local')" class="btn" type="button">Your Time</button>
       <button id="grubby-time" onclick="changeTimezone('grubby')" class="btn">Grubby's Time</button>
     </span>
     <span style="margin-left: 32px;">Format:</span>
     <span class="btn-group">
+      <button id="default-time" onclick="changeTimeFormat('')" class="btn">Default</button>
       <button id="12h-time" onclick="changeTimeFormat('12h')" class="btn">12h</button>
       <button id="24h-time" onclick="changeTimeFormat('24h')" class="btn">24h</button>
     </span>
@@ -90,6 +91,7 @@
   <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
   <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/google-calendar@6.1.15/index.global.min.js'></script>
   <script>
+    const grubbyTimezone = 'Europe/Amsterdam';
     var calendar = null;
 
     function getTimezoneOffset(tz) {
@@ -121,6 +123,10 @@
     }
 
     function getOptions(targetTimezone) {
+      document.getElementById('local-time').disabled = targetTimezone === 'local';
+      document.getElementById('grubby-time').disabled = targetTimezone === 'grubby';
+      if (targetTimezone === 'grubby') targetTimezone = grubbyTimezone;
+
       // Target timezone offset (+2:00 in this case)
       var targetTimezoneOffset = -2 * 60; // in minutes, to get to UTC
 
@@ -145,8 +151,37 @@
       };
     }
 
-    function initCalendar() {
-      var { timeZone, slotMinTime, slotMaxTime } = getOptions('local');
+    function changeTimezone(targetTimezone) {
+      var { timeZone, slotMinTime, slotMaxTime } = getOptions(targetTimezone);
+      calendar.setOption('slotMinTime', slotMinTime);
+      calendar.setOption('slotMaxTime', slotMaxTime);
+      calendar.setOption('timeZone', timeZone);
+      localStorage.setItem('timezone', targetTimezone);
+    }
+
+    function getTimeFormat(timeFormat) {
+      document.getElementById('default-time').disabled = !timeFormat;
+      document.getElementById('12h-time').disabled = timeFormat === '12h';
+      document.getElementById('24h-time').disabled = timeFormat === '24h';
+      if (!timeFormat) {
+        return null;
+      }
+      return {
+        hour: 'numeric',
+        minute: '2-digit',
+        meridiem: false,
+        hour12: timeFormat === '12h',
+      }
+    }
+
+    function changeTimeFormat(timeFormat) {
+      var eventTimeFormat = getTimeFormat(timeFormat);
+      calendar.setOption('eventTimeFormat', eventTimeFormat);
+      localStorage.setItem('timeFormat', timeFormat);
+    }
+
+    function initCalendar(timeZone) {
+      var { timeZone, slotMinTime, slotMaxTime } = getOptions(timeZone);
 
       var calendarEl = document.getElementById('calendar');
       calendar = new FullCalendar.Calendar(calendarEl, {
@@ -169,7 +204,7 @@
           // console.log(eventData);
           delete eventData.url;
         },
-        allDaySlot: false,
+        allDayContent: '',
         nowIndicator: true,
         slotMinTime,
         slotMaxTime,
@@ -177,31 +212,11 @@
       calendar.render();
     }
 
-    function changeTimezone(targetTimezone) {
-      document.getElementById('local-time').disabled = targetTimezone === 'local';
-      document.getElementById('grubby-time').disabled = targetTimezone === 'grubby';
-      if (targetTimezone === 'grubby') {
-        targetTimezone = 'Europe/Amsterdam';
-      }
-      var { timeZone, slotMinTime, slotMaxTime } = getOptions(targetTimezone);
-      calendar.setOption('slotMinTime', slotMinTime);
-      calendar.setOption('slotMaxTime', slotMaxTime);
-      calendar.setOption('timeZone', timeZone);
-    }
-
-    function changeTimeFormat(format) {
-      document.getElementById('12h-time').disabled = format === '12h';
-      document.getElementById('24h-time').disabled = format === '24h';
-      calendar.setOption('eventTimeFormat', {
-        hour: 'numeric',
-        minute: '2-digit',
-        meridiem: false,
-        hour12: format === '12h',
-      });
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
-      initCalendar('local');
+      const timezone = localStorage.getItem('timezone') ?? 'local';
+      const timeFormat = localStorage.getItem('timeFormat') ?? '';
+      initCalendar(timezone);
+      changeTimeFormat(timeFormat);
     });
   </script>
 </body>
