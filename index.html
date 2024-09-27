@@ -85,9 +85,13 @@
     </span>
     <span style="margin-left: 32px;">Format:</span>
     <span class="btn-group">
-      <!-- <button id="default-time" onclick="changeTimeFormat('')" class="btn">Default</button> -->
       <button id="12h-time" onclick="changeTimeFormat('12h')" class="btn">12h</button>
       <button id="24h-time" onclick="changeTimeFormat('24h')" class="btn">24h</button>
+    </span>
+    <span style="margin-left: 32px;">Week starts on:</span>
+    <span class="btn-group">
+      <button id="sunday-week" onclick="changeWeekStart('sunday')" class="btn">Sunday</button>
+      <button id="monday-week" onclick="changeWeekStart('monday')" class="btn">Monday</button>
     </span>
   </p>
   
@@ -170,16 +174,9 @@
 
     // Get the event time format based on the selected time format
     function getTimeFormat(timeFormat) {
-      // document.getElementById('default-time').disabled = !timeFormat;
       if (!timeFormat) timeFormat = '24h';
       document.getElementById('12h-time').disabled = timeFormat === '12h';
       document.getElementById('24h-time').disabled = timeFormat === '24h';
-      // if (!timeFormat) {
-      //   return {
-      //     eventTimeFormat: null,
-      //     slotLabelFormat: null,
-      //   };
-      // }
       return {
         eventTimeFormat: {
           hour: 'numeric',
@@ -206,10 +203,23 @@
       localStorage.setItem('timeFormat', timeFormat);
     }
 
+    function getWeekStart(weekStart) {
+      document.getElementById('sunday-week').disabled = weekStart === 'sunday';
+      document.getElementById('monday-week').disabled = weekStart === 'monday';
+      return weekStart === 'sunday' ? 0 : 1;
+    }
+
+    function changeWeekStart(weekStart) {
+      const firstDay = getWeekStart(weekStart);
+      calendar.setOption('firstDay', firstDay);
+      localStorage.setItem('weekStart', weekStart);
+    }
+
     // Initialize and render the calendar
-    function initCalendar(timeZone, timeFormat) {
+    function initCalendar(timeZone, timeFormat, weekStart) {
       var { timeZone, slotMinTime, slotMaxTime } = getOptions(timeZone);
       var { eventTimeFormat, slotLabelFormat } = getTimeFormat(timeFormat);
+      var firstDay = getWeekStart(weekStart);
 
       var calendarEl = document.getElementById('calendar');
       calendar = new FullCalendar.Calendar(calendarEl, {
@@ -247,6 +257,7 @@
         slotMaxTime,
         eventTimeFormat,
         slotLabelFormat,
+        firstDay,
       });
       calendar.render();
     }
@@ -255,7 +266,8 @@
     document.addEventListener('DOMContentLoaded', function() {
       const timezone = localStorage.getItem('timezone') ?? 'local';
       const timeFormat = localStorage.getItem('timeFormat') ?? '24h';
-      initCalendar(timezone, timeFormat);
+      const weekStart = localStorage.getItem('weekStart') ?? 'monday';
+      initCalendar(timezone, timeFormat, weekStart);
     });
   </script>
 </body>
