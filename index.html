@@ -14,6 +14,15 @@
       --fc-button-hover-bg-color: rgb(24, 44, 87);
       --fc-button-hover-border-color: rgb(24, 44, 87);
     }
+    body {
+      margin: 8px;
+      height: calc(100svh - 8px * 2);
+      display: flex;
+      flex-flow: column;
+    }
+    h2 {
+      margin-top: 0;
+    }
     .btn {
       font-size: 18px;
       background-color: var(--fc-button-bg-color);
@@ -62,6 +71,14 @@
       border-bottom-left-radius: 0;
     }
 
+    #calendar {
+      flex: 1;
+      overflow-y: hidden;
+    }
+    .fc-view-harness {
+      flex: 1;
+      overflow-y: scroll;
+    }
     .fc-button-group {
       gap: 2px;
     }
