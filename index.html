@@ -157,7 +157,7 @@
       var offsetDifference = targetTimezoneOffset - localTimezoneOffset;
 
       // Target times in +2 timezone
-      var targetSlotMinTime = '16:00:00';
+      var targetSlotMinTime = '04:00:00';
       var targetSlotMaxTime = '28:00:00';
 
       // Convert target times to local times based on the offset difference
@@ -180,6 +180,7 @@
       calendar.destroy();
       calendar.render();
       localStorage.setItem('timezone', targetTimezone);
+      scrollToNowIndicator()
     }
 
     // Get the event time format based on the selected time format
@@ -211,6 +212,7 @@
       calendar.setOption('eventTimeFormat', eventTimeFormat);
       calendar.setOption('slotLabelFormat', slotLabelFormat);
       localStorage.setItem('timeFormat', timeFormat);
+      scrollToNowIndicator()
     }
 
     function getWeekStart(weekStart) {
@@ -272,12 +274,20 @@
       calendar.render();
     }
 
+    function scrollToNowIndicator() {
+      document.querySelector(".fc-timegrid-now-indicator-line").scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      })
+    }
+
     // On page load, initialize the calendar with the saved timezone and time format
     document.addEventListener('DOMContentLoaded', function() {
       const timezone = localStorage.getItem('timezone') ?? 'local';
       const timeFormat = localStorage.getItem('timeFormat') ?? '24h';
       const weekStart = localStorage.getItem('weekStart') ?? 'monday';
       initCalendar(timezone, timeFormat, weekStart);
+      scrollToNowIndicator()
     });
   </script>
 </body>
